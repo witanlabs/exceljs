@@ -1,4 +1,5 @@
 const ExcelJS = verquire('exceljs');
+const TableXform = verquire('xlsx/xform/table/table-xform');
 
 describe('github issues', () => {
   describe('issue 1062 - table rows not loaded from xlsx', () => {
@@ -154,6 +155,49 @@ describe('github issues', () => {
       expect(table.model.rows).to.have.lengthOf(2);
       expect(table.model.rows[0]).to.deep.equal(['Alice', 100]);
       expect(table.model.rows[1]).to.deep.equal(['Bob', 200]);
+    });
+
+    it('should default headerRow to true when headerRowCount is omitted (OOXML spec)', () => {
+      // This tests the fix for Excel-generated files that omit headerRowCount
+      // OOXML spec says headerRowCount defaults to 1, meaning headerRow should be true
+      const xform = new TableXform();
+
+      // Simulate parsing table XML without headerRowCount attribute (as Excel generates)
+      const mockNode = {
+        name: 'table',
+        attributes: {
+          name: 'Table1',
+          displayName: 'Table1',
+          ref: 'A1:B4',
+          // Note: no headerRowCount attribute - this is what Excel typically generates
+        },
+      };
+
+      xform.parseOpen(mockNode);
+      const {model} = xform;
+
+      // headerRow should be true per OOXML default
+      expect(model.headerRow).to.be.true();
+    });
+
+    it('should set headerRow to false when headerRowCount is explicitly 0', () => {
+      const xform = new TableXform();
+
+      const mockNode = {
+        name: 'table',
+        attributes: {
+          name: 'Table1',
+          displayName: 'Table1',
+          ref: 'A1:B4',
+          headerRowCount: '0',
+        },
+      };
+
+      xform.parseOpen(mockNode);
+      const {model} = xform;
+
+      // headerRow should be false when explicitly set to 0
+      expect(model.headerRow).to.be.false();
     });
   });
 });
