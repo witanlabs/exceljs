@@ -399,11 +399,152 @@ describe('Cell', () => {
     expect(a1.model.comment.note.protection).to.deep.equal(comment.protection);
     expect(a1.model.comment.note.margins.insetmode).to.equal('auto');
     expect(a1.model.comment.note.margins.inset).to.deep.equal([
-      0.13,
-      0.13,
-      0.25,
-      0.25,
+      0.13, 0.13, 0.25, 0.25,
     ]);
     expect(a1.model.comment.note.editAs).to.equal('absolute');
+  });
+
+  describe('Style Cloning', () => {
+    // Tests for PR #2781: Fix cell style cloning to prevent shared style mutation
+    // When cells share the same style object, modifying one cell's style via setters
+    // should not affect other cells
+
+    it('clones style when setting numFmt', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      // Make cells share the same style object
+      const sharedStyle = {numFmt: '0.00'};
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      expect(a1.style).to.equal(b1.style);
+
+      // Modify a1's numFmt via setter
+      a1.numFmt = '0.0000';
+
+      // a1's style should be updated
+      expect(a1.numFmt).to.equal('0.0000');
+      // b1's style should remain unchanged
+      expect(b1.numFmt).to.equal('0.00');
+      // They should no longer share the same object
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('clones style when setting font', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      const sharedStyle = {font: {name: 'Arial', size: 12}};
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      const newFont = {name: 'Times New Roman', size: 14, bold: true};
+      a1.font = newFont;
+
+      expect(a1.font).to.deep.equal(newFont);
+      expect(b1.font).to.deep.equal({name: 'Arial', size: 12});
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('clones style when setting alignment', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      const sharedStyle = {alignment: {horizontal: 'left'}};
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      a1.alignment = {horizontal: 'center', vertical: 'middle'};
+
+      expect(a1.alignment).to.deep.equal({
+        horizontal: 'center',
+        vertical: 'middle',
+      });
+      expect(b1.alignment).to.deep.equal({horizontal: 'left'});
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('clones style when setting border', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      const sharedStyle = {
+        border: {
+          top: {style: 'thin', color: {argb: 'FF000000'}},
+        },
+      };
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      a1.border = {
+        top: {style: 'thick', color: {argb: 'FFFF0000'}},
+        bottom: {style: 'thin', color: {argb: 'FF000000'}},
+      };
+
+      expect(a1.border.top.style).to.equal('thick');
+      expect(a1.border.bottom.style).to.equal('thin');
+      expect(b1.border.top.style).to.equal('thin');
+      expect(b1.border.bottom).to.equal(undefined);
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('clones style when setting fill', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      const sharedStyle = {
+        fill: {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: {argb: 'FFFFFF00'},
+        },
+      };
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      a1.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: {argb: 'FFFF0000'},
+      };
+
+      expect(a1.fill.fgColor.argb).to.equal('FFFF0000');
+      expect(b1.fill.fgColor.argb).to.equal('FFFFFF00');
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('clones style when setting protection', () => {
+      const a1 = sheetMock.getCell('A1');
+      const b1 = sheetMock.getCell('B1');
+
+      const sharedStyle = {protection: {locked: true}};
+      a1.style = sharedStyle;
+      b1.style = sharedStyle;
+
+      a1.protection = {locked: false, hidden: true};
+
+      expect(a1.protection).to.deep.equal({locked: false, hidden: true});
+      expect(b1.protection).to.deep.equal({locked: true});
+      expect(a1.style).to.not.equal(b1.style);
+    });
+
+    it('preserves other style properties when setting one property', () => {
+      const a1 = sheetMock.getCell('A1');
+
+      a1.style = {
+        numFmt: '0.00',
+        font: {name: 'Arial', size: 12},
+        fill: {type: 'pattern', pattern: 'solid', fgColor: {argb: 'FFFFFF00'}},
+      };
+
+      // Change just the font
+      a1.font = {name: 'Times New Roman', size: 14};
+
+      // Other properties should be preserved
+      expect(a1.numFmt).to.equal('0.00');
+      expect(a1.fill.fgColor.argb).to.equal('FFFFFF00');
+      expect(a1.font.name).to.equal('Times New Roman');
+    });
   });
 });
