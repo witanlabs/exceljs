@@ -84,7 +84,7 @@ This document groups related PRs that implement the same or overlapping function
 
 ---
 
-## Group 4: Table Loading and Corruption Fixes
+## Group 4: Table Loading and Corruption Fixes ✅ DONE
 
 **Problem**: Tables don't load correctly from disk, cause corruption when modified.
 
@@ -97,12 +97,29 @@ This document groups related PRs that implement the same or overlapping function
 | **#2089** ⭐ | Fix table corruption when reading/modifying XLSX | ✅ Yes  | Focuses on corruption prevention    |
 | #2090        | Tables/media update on row/column insert/delete  | ✅ Yes  | Reference updates during splice     |
 
-**Recommendation**:
+**Decision**: ✅ **ADOPTED** - Combined approach from PRs #1936, #2089, #1222, #1938
 
-1. Start with #2089 for corruption fix
-2. Then #1222 for loading (with fixes)
-3. Then #2090 for splice operations
-4. #1345 is ambitious but has issues - cherry-pick good ideas
+**Analysis Summary**:
+- PR #1936: Simple fix for `parseClose()` in table-column-xform.js to properly handle calculated columns
+- PRs #2089/#1222/#1938: All address the same core issue - tables loaded from xlsx have empty `rows` arrays
+- PR #2090: Larger scope enhancement for splice operations - **DEFERRED** for separate evaluation
+- PR #1345: Too broad scope with failing tests - **REJECTED**
+
+**Implementation**:
+1. Fixed `parseClose()` in `table-column-xform.js` to return `name !== this.tag` instead of `false`
+2. Added `_loadRowsFromWorksheet()` method to Table class that populates `rows` from worksheet cells
+3. Modified Table constructor to accept `{isLoading: true}` option that triggers row loading instead of `store()`
+4. Updated worksheet.js to pass `{isLoading: true}` when loading tables from xlsx
+
+**Results**:
+- Tables loaded from xlsx now have their `rows` array properly populated from worksheet cell data
+- `table.addRow()` works correctly on loaded tables (appends to existing rows)
+- Worksheet cell data is preserved (not overwritten with empty data)
+- Tables with header rows and/or totals rows handled correctly
+
+**Tests**: Added 4 integration tests verifying table loading behavior.
+
+**Benchmark**: No regression - all benchmarks within normal variance (±5%)
 
 ---
 
