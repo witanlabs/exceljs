@@ -71,7 +71,7 @@ This document groups related PRs that implement the same or overlapping function
 
 ---
 
-## Group 3: Shapes and Drawing Objects
+## Group 3: Shapes and Drawing Objects ❌ NOT ADOPTED
 
 **Problem**: No support for shapes, text boxes in ExcelJS.
 
@@ -80,7 +80,26 @@ This document groups related PRs that implement the same or overlapping function
 | #2077        | Basic shape support              | Partial | 3 approvals, 11 comments, original impl        |
 | **#2601** ⭐ | Shapes and text boxes (enhanced) | ✅ Yes  | Built on #2077, adds TypeScript, more features |
 
-**Recommendation**: Evaluate #2601 - it's more complete with better test coverage and TypeScript types. May want to compare implementations for any features #2077 has that #2601 doesn't.
+**Decision**: ❌ **NOT ADOPTED** - Feature addition deferred due to complexity and unknown need.
+
+**Analysis Summary**:
+- PR #2077: Basic shape support with core types (LINE, RECTANGLE, ELLIPSE, etc.), 3 approvals but partial tests
+- PR #2601: Enhanced version with TypeScript definitions, full tests, text styling, hyperlinks, better architecture
+
+**Comparison**: PR #2601 is clearly superior with:
+- Full unit and integration tests
+- TypeScript definitions
+- More features (text styling, line dash patterns, hyperlinks)
+- Better architecture (shared `drawing-range.js` for images and shapes)
+
+**Why Not Adopted**:
+1. **Feature Addition, Not Bug Fix**: Adds new functionality rather than fixing existing bugs
+2. **High Complexity**: ~15+ new xform files, modifies core drawing infrastructure
+3. **Unknown User Need**: No indication Witan requires shape support
+4. **Risk**: Could affect existing image functionality
+5. **Maintenance Burden**: Significant codebase complexity increase
+
+**Future Recommendation**: If shape support becomes a requirement, PR #2601 is the better choice. Users needing shapes now can use patch-package as the PR author suggests.
 
 ---
 
