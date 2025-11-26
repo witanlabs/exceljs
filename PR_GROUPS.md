@@ -13,7 +13,7 @@ This document groups related PRs that implement the same or overlapping function
 
 ---
 
-## Group 1: Cell Style Mutation / Cloning
+## Group 1: Cell Style Mutation / Cloning ✅ DONE
 
 **Problem**: When cells share style objects, modifying one cell's style affects others.
 
@@ -23,7 +23,18 @@ This document groups related PRs that implement the same or overlapping function
 | #1378        | Fix cell style modification affecting other cells   | Partial | Adds setStyle() helper method     |
 | #1573        | Fix cell.style.fill problems                        | ✅ Yes  | Similar to #2781, focused on fill |
 
-**Recommendation**: Evaluate #2781 first - it's the most recent and comprehensive. Check if #1573's test cases add value.
+**Decision**: ✅ **ADOPTED** - Implemented PR #2781's approach (style cloning on setters).
+
+**Analysis Summary**:
+- PR #2781 is the cleanest solution - modifies all 6 style setters to clone the style before mutation
+- PR #1378 only provides a workaround (`setStyle()` method) requiring users to change their code
+- PR #1573 only addresses the model setter, not the property setters
+
+**Implementation**: Added `_applyStyle()` helper method to Cell class that clones style via existing `copyStyle` utility before setting property. All 6 setters (numFmt, font, alignment, border, fill, protection) now use this method.
+
+**Tests**: Added 7 unit tests verifying style cloning behavior for all setters.
+
+**Benchmark**: No regression - all benchmarks within ±6% (natural variance).
 
 ---
 
