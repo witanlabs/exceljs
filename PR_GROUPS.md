@@ -38,7 +38,7 @@ This document groups related PRs that implement the same or overlapping function
 
 ---
 
-## Group 2: Merged Cells Performance
+## Group 2: Merged Cells Performance ✅ DONE
 
 **Problem**: Checking merged cell conflicts is O(n²), extremely slow with many merges.
 
@@ -47,7 +47,27 @@ This document groups related PRs that implement the same or overlapping function
 | #2691        | Fix inefficient merge check             | Manual | ⚠️ Has syntax errors (isMerged() vs isMerged) |
 | **#2920** ⭐ | Fix inefficient merge check (corrected) | Manual | Fixes #2691's syntax errors                   |
 
-**Recommendation**: Use #2920 - it's the corrected version of #2691.
+**Decision**: ✅ **ADOPTED** - Implemented PR #2920's approach (O(n) cell-based merge checking).
+
+**Analysis Summary**:
+- The original implementation iterated through ALL existing merges for each new merge operation - O(n²) complexity
+- PR #2920 changes this to check individual cells directly via `cell.isMerged` property - O(m) where m is merge area
+- PR #2691 had syntax errors (`isMerged()` vs `isMerged`), which PR #2920 corrects
+
+**Performance Results** (10,000 merges stress test):
+| Merges | Old O(n²) | New O(n) | Speedup |
+|--------|-----------|----------|---------|
+| 500    | 14ms      | 3ms      | 4.7x    |
+| 1000   | 84ms      | 8ms      | 10.5x   |
+| 2000   | 220ms     | 9ms      | 24x     |
+| 5000   | 1499ms    | 14ms     | 107x    |
+| 10000  | 6464ms    | 34ms     | **190x** |
+
+**Benchmark**: Standard merged_cells benchmark shows -10% time improvement (137ms → 123ms) and -7% memory improvement.
+
+**Tests**: All 4 merge-related tests pass (overlapping merges prevention, merge/unmerge, style merging).
+
+**Implementation**: Modified `_mergeCellsInternal()` in `lib/doc/worksheet.js` to check `cell.isMerged` property directly instead of iterating through all existing merges.
 
 ---
 
